@@ -1,11 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Nostr Web Apps – iframe Loading Test</title>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -43,7 +50,11 @@
       font-size: .85rem;
     }
 
-    .legend-item { display: flex; align-items: center; gap: .4rem; }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+    }
 
     .badge {
       display: inline-flex;
@@ -56,9 +67,20 @@
       white-space: nowrap;
     }
 
-    .badge-loading { background: #1f3a5f; color: #79c0ff; }
-    .badge-allowed { background: #1a3a2a; color: #56d364; }
-    .badge-blocked { background: #3d1a1a; color: #f85149; }
+    .badge-loading {
+      background: #1f3a5f;
+      color: #79c0ff;
+    }
+
+    .badge-allowed {
+      background: #1a3a2a;
+      color: #56d364;
+    }
+
+    .badge-blocked {
+      background: #3d1a1a;
+      color: #f85149;
+    }
 
     .grid {
       display: grid;
@@ -78,7 +100,9 @@
       transition: border-color .2s;
     }
 
-    .card:hover { border-color: #58a6ff; }
+    .card:hover {
+      border-color: #58a6ff;
+    }
 
     .card-header {
       display: flex;
@@ -115,7 +139,9 @@
       max-width: 180px;
     }
 
-    .card-url:hover { text-decoration: underline; }
+    .card-url:hover {
+      text-decoration: underline;
+    }
 
     .iframe-wrapper {
       position: relative;
@@ -146,7 +172,9 @@
       pointer-events: none;
     }
 
-    .overlay.hidden { display: none; }
+    .overlay.hidden {
+      display: none;
+    }
 
     .spinner {
       width: 32px;
@@ -157,7 +185,11 @@
       animation: spin 1s linear infinite;
     }
 
-    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
 
     .card-footer {
       padding: .5rem 1rem;
@@ -170,7 +202,9 @@
       gap: .5rem;
     }
 
-    .status-text { font-style: italic; }
+    .status-text {
+      font-style: italic;
+    }
 
     /* Summary bar */
     #summary {
@@ -186,8 +220,13 @@
       font-size: .85rem;
     }
 
-    #summary span { color: #8b949e; }
-    #summary strong { color: #f0f6fc; }
+    #summary span {
+      color: #8b949e;
+    }
+
+    #summary strong {
+      color: #f0f6fc;
+    }
 
     footer {
       text-align: center;
@@ -196,145 +235,157 @@
       font-size: .8rem;
     }
 
-    footer a { color: #58a6ff; text-decoration: none; }
-    footer a:hover { text-decoration: underline; }
+    footer a {
+      color: #58a6ff;
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
+
 <body>
 
-<header>
-  <h1>🟣 Nostr Web Apps – iframe Loading Test</h1>
-  <p>
-    Each card attempts to load a known Nostr web app inside an
-    <code>&lt;iframe&gt;</code>. A green badge means the site
-    allowed embedding; a red badge means it was blocked (usually via
-    <code>X-Frame-Options</code> or <code>Content-Security-Policy</code>).
-  </p>
-</header>
+  <header>
+    <h1>🟣 Nostr Web Apps – iframe Loading Test</h1>
+    <p>
+      Each card attempts to load a known Nostr web app inside an
+      <code>&lt;iframe&gt;</code>. A green badge means the site
+      allowed embedding; a red badge means it was blocked (usually via
+      <code>X-Frame-Options</code> or <code>Content-Security-Policy</code>).
+    </p>
+  </header>
 
-<div class="legend">
-  <div class="legend-item"><span class="badge badge-loading">⏳ Loading</span> – waiting for response</div>
-  <div class="legend-item"><span class="badge badge-allowed">✅ Allowed</span> – iframe loaded successfully</div>
-  <div class="legend-item"><span class="badge badge-blocked">🚫 Blocked</span> – browser blocked the iframe</div>
-</div>
+  <div class="legend">
+    <div class="legend-item"><span class="badge badge-loading">⏳ Loading</span> – waiting for response</div>
+    <div class="legend-item"><span class="badge badge-allowed">✅ Allowed</span> – iframe loaded successfully</div>
+    <div class="legend-item"><span class="badge badge-blocked">🚫 Blocked</span> – browser blocked the iframe</div>
+  </div>
 
-<div id="summary">
-  <span>Total: <strong id="cnt-total">0</strong></span>
-  <span>Loading: <strong id="cnt-loading">0</strong></span>
-  <span>Allowed: <strong id="cnt-allowed">0</strong></span>
-  <span>Blocked: <strong id="cnt-blocked">0</strong></span>
-</div>
+  <div id="summary">
+    <span>Total: <strong id="cnt-total">0</strong></span>
+    <span>Loading: <strong id="cnt-loading">0</strong></span>
+    <span>Allowed: <strong id="cnt-allowed">0</strong></span>
+    <span>Blocked: <strong id="cnt-blocked">0</strong></span>
+  </div>
 
-<div class="grid" id="grid"></div>
+  <div class="grid" id="grid"></div>
 
-<footer>
-  <p>
-    Results depend on your browser and network. Blocked iframes are typically refused by
-    <code>X-Frame-Options: DENY/SAMEORIGIN</code> or a restrictive <code>Content-Security-Policy: frame-ancestors</code> header.
-    &nbsp;·&nbsp;
-    <a href="https://github.com/sondreb/iframe-loading" target="_blank" rel="noopener">GitHub</a>
-  </p>
-</footer>
+  <footer>
+    <p>
+      Results depend on your browser and network. Blocked iframes are typically refused by
+      <code>X-Frame-Options: DENY/SAMEORIGIN</code> or a restrictive
+      <code>Content-Security-Policy: frame-ancestors</code> header.
+      &nbsp;·&nbsp;
+      <a href="https://github.com/sondreb/iframe-loading" target="_blank" rel="noopener">GitHub</a>
+    </p>
+  </footer>
 
-<script>
-  const apps = [
-    { name: "Nostria",         url: "https://nostria.app" },
-    { name: "Ditto",           url: "https://ditto.pub" },
-    { name: "Primal",          url: "https://primal.net" },
-    { name: "Snort",           url: "https://snort.social" },
-    { name: "Coracle",         url: "https://coracle.social" },
-    { name: "Iris",            url: "https://iris.to" },
-    { name: "noStrudel",       url: "https://nostrudel.ninja" },
-    { name: "Satellite",       url: "https://satellite.earth" },
-    { name: "YakiHonne",       url: "https://yakihonne.com" },
-    { name: "Habla",           url: "https://habla.news" },
-    { name: "Nostr.band",      url: "https://nostr.band" },
-    { name: "Zap.stream",      url: "https://zap.stream" },
-    { name: "Highlighter",     url: "https://highlighter.com" },
-    { name: "Olas",            url: "https://olas.app" },
-    { name: "Nosta",           url: "https://nosta.me" },
-    { name: "Astral",          url: "https://astral.ninja" },
-    { name: "FreeFrom",        url: "https://freefrom.app" },
-    { name: "Jumble",          url: "https://jumble.social" },
-    { name: "Wherostr",        url: "https://wherostr.social" },
-    { name: "Rabbit",          url: "https://rabbit.syusui.net" },
-    { name: "Nostr.com",       url: "https://www.nostr.com" },
-    { name: "Nostter",         url: "https://nostter.app" },
-    { name: "Spring",          url: "https://spring.site" },
-    { name: "Zapddit",         url: "https://zapddit.com" },
-    { name: "Nostrgram",       url: "https://nostrgram.co" },
-    { name: "Plebeian Market", url: "https://plebeian.market" },
-    { name: "Wavlake",         url: "https://wavlake.com" },
-    { name: "Nostr Apps",      url: "https://nostrapps.com" },
-    { name: "Nostr.directory", url: "https://nostr.directory" },
-  ];
+  <script>
+    const apps = [
+      { name: "Nostria", url: "https://nostria.app" },
+      { name: "Ditto", url: "https://ditto.pub" },
+      { name: "Primal", url: "https://primal.net" },
+      { name: "Snort", url: "https://snort.social" },
+      { name: "Coracle", url: "https://coracle.social" },
+      { name: "Iris", url: "https://iris.to" },
+      { name: "noStrudel", url: "https://nostrudel.ninja" },
+      { name: "Satellite", url: "https://satellite.earth" },
+      { name: "YakiHonne", url: "https://yakihonne.com" },
+      { name: "Habla", url: "https://habla.news" },
+      { name: "Zap.stream", url: "https://zap.stream" },
+      { name: "Highlighter", url: "https://highlighter.com" },
+      { name: "Olas", url: "https://olas.app" },
+      { name: "Nosta", url: "https://nosta.me" },
+      { name: "FreeFrom", url: "https://freefrom.app" },
+      { name: "Jumble", url: "https://jumble.social" },
+      { name: "Wherostr", url: "https://wherostr.social" },
+      { name: "Rabbit", url: "https://rabbit.syusui.net" },
+      { name: "Nostr.com", url: "https://www.nostr.com" },
+      { name: "Nostter", url: "https://nostter.app" },
+      { name: "Spring", url: "https://spring.site" },
+      { name: "Zapddit", url: "https://zapddit.com" },
+      { name: "Nostrgram", url: "https://nostrgram.co" },
+      { name: "Plebeian Market", url: "https://plebeian.market" },
+      { name: "Wavlake", url: "https://wavlake.com" },
+      { name: "Nostr Apps", url: "https://nostrapps.com" },
+      { name: "Nostr.directory", url: "https://nostr.directory" },
+      { name: "Sunami", url: "https://sunami.app/" },
+      { name: "Divine", url: "https://divine.video/" },
+      { name: "Nostube", url: "https://nostu.be/" },
+      { name: "Nodecast", url: "https://nodecast.xyz" },
+      { name: "Zaptrax", url: "https://zaptrax.app" },
+      { name: "Grimoire", url: "https://grimoire.rocks" }
+    ];
 
-  let counts = { total: apps.length, loading: apps.length, allowed: 0, blocked: 0 };
+    let counts = { total: apps.length, loading: apps.length, allowed: 0, blocked: 0 };
 
-  function updateSummary() {
-    document.getElementById("cnt-total").textContent   = counts.total;
-    document.getElementById("cnt-loading").textContent = counts.loading;
-    document.getElementById("cnt-allowed").textContent = counts.allowed;
-    document.getElementById("cnt-blocked").textContent = counts.blocked;
-  }
-
-  function markAllowed(card, badge, overlay, statusText) {
-    badge.className   = "badge badge-allowed";
-    badge.textContent = "✅ Allowed";
-    overlay.classList.add("hidden");
-    statusText.textContent = "Loaded in iframe ✓";
-    card.style.borderColor = "#238636";
-    counts.loading--;
-    counts.allowed++;
-    updateSummary();
-  }
-
-  function markBlocked(card, badge, overlay, statusText) {
-    badge.className   = "badge badge-blocked";
-    badge.textContent = "🚫 Blocked";
-    // Keep overlay visible but swap spinner for a lock icon
-    overlay.innerHTML = "<div style='font-size:2rem'>🔒</div><div>Blocked by browser</div>";
-    statusText.textContent = "iframe blocked by site headers";
-    card.style.borderColor = "#da3633";
-    counts.loading--;
-    counts.blocked++;
-    updateSummary();
-  }
-
-  function detectIframeOutcome(iframe) {
-    try {
-      const frameWindow = iframe.contentWindow;
-      const frameDocument = iframe.contentDocument || frameWindow?.document;
-      const href = frameWindow?.location?.href || "";
-      const bodyText = (frameDocument?.body?.innerText || "").trim().toLowerCase();
-      const blockedText = /refused to connect|blocked by browser|x-frame-options|content-security-policy|frame-ancestors/.test(bodyText);
-
-      if (!href || href === "about:blank") {
-        return "blocked";
-      }
-
-      if (blockedText) {
-        return "blocked";
-      }
-
-      return "allowed";
-    } catch (_) {
-      // Cross-origin access throws once a page actually loads, which is the
-      // strongest signal we have that embedding was allowed.
-      return "allowed";
+    function updateSummary() {
+      document.getElementById("cnt-total").textContent = counts.total;
+      document.getElementById("cnt-loading").textContent = counts.loading;
+      document.getElementById("cnt-allowed").textContent = counts.allowed;
+      document.getElementById("cnt-blocked").textContent = counts.blocked;
     }
-  }
 
-  const grid = document.getElementById("grid");
-  updateSummary();
+    function markAllowed(card, badge, overlay, statusText) {
+      badge.className = "badge badge-allowed";
+      badge.textContent = "✅ Allowed";
+      overlay.classList.add("hidden");
+      statusText.textContent = "Loaded in iframe ✓";
+      card.style.borderColor = "#238636";
+      counts.loading--;
+      counts.allowed++;
+      updateSummary();
+    }
 
-  apps.forEach(({ name, url }) => {
-    const card = document.createElement("div");
-    card.className = "card";
+    function markBlocked(card, badge, overlay, statusText) {
+      badge.className = "badge badge-blocked";
+      badge.textContent = "🚫 Blocked";
+      // Keep overlay visible but swap spinner for a lock icon
+      overlay.innerHTML = "<div style='font-size:2rem'>🔒</div><div>Blocked by browser</div>";
+      statusText.textContent = "iframe blocked by site headers";
+      card.style.borderColor = "#da3633";
+      counts.loading--;
+      counts.blocked++;
+      updateSummary();
+    }
 
-    const displayUrl = url.replace(/^https?:\/\//, "");
+    function detectIframeOutcome(iframe) {
+      try {
+        const frameWindow = iframe.contentWindow;
+        const frameDocument = iframe.contentDocument || frameWindow?.document;
+        const href = frameWindow?.location?.href || "";
+        const bodyText = (frameDocument?.body?.innerText || "").trim().toLowerCase();
+        const blockedText = /refused to connect|blocked by browser|x-frame-options|content-security-policy|frame-ancestors/.test(bodyText);
 
-    card.innerHTML = `
+        if (!href || href === "about:blank") {
+          return "blocked";
+        }
+
+        if (blockedText) {
+          return "blocked";
+        }
+
+        return "allowed";
+      } catch (_) {
+        // Cross-origin access throws once a page actually loads, which is the
+        // strongest signal we have that embedding was allowed.
+        return "allowed";
+      }
+    }
+
+    const grid = document.getElementById("grid");
+    updateSummary();
+
+    apps.forEach(({ name, url }) => {
+      const card = document.createElement("div");
+      card.className = "card";
+
+      const displayUrl = url.replace(/^https?:\/\//, "");
+
+      card.innerHTML = `
       <div class="card-header">
         <div class="card-title">
           <h2>${name}</h2>
@@ -360,47 +411,48 @@
         <span style="color:#6e7681">${displayUrl}</span>
       </div>`;
 
-    grid.appendChild(card);
+      grid.appendChild(card);
 
-    const badge      = card.querySelector(".badge");
-    const overlay    = card.querySelector(".overlay");
-    const statusText = card.querySelector(".status-text");
-    const iframe     = card.querySelector("iframe");
+      const badge = card.querySelector(".badge");
+      const overlay = card.querySelector(".overlay");
+      const statusText = card.querySelector(".status-text");
+      const iframe = card.querySelector("iframe");
 
-    // Timeout: if no load/error fires within 12 seconds, treat as blocked
-    let settled = false;
-    const timeout = setTimeout(() => {
-      if (!settled) {
-        settled = true;
-        markBlocked(card, badge, overlay, statusText);
-      }
-    }, 12000);
+      // Timeout: if no load/error fires within 12 seconds, treat as blocked
+      let settled = false;
+      const timeout = setTimeout(() => {
+        if (!settled) {
+          settled = true;
+          markBlocked(card, badge, overlay, statusText);
+        }
+      }, 12000);
 
-    iframe.addEventListener("load", () => {
-      if (settled) return;
-      window.setTimeout(() => {
+      iframe.addEventListener("load", () => {
         if (settled) return;
+        window.setTimeout(() => {
+          if (settled) return;
 
+          settled = true;
+          clearTimeout(timeout);
+          const outcome = detectIframeOutcome(iframe);
+
+          if (outcome === "blocked") {
+            markBlocked(card, badge, overlay, statusText);
+            return;
+          }
+
+          markAllowed(card, badge, overlay, statusText);
+        }, 150);
+      });
+
+      iframe.addEventListener("error", () => {
+        if (settled) return;
         settled = true;
         clearTimeout(timeout);
-        const outcome = detectIframeOutcome(iframe);
-
-        if (outcome === "blocked") {
-          markBlocked(card, badge, overlay, statusText);
-          return;
-        }
-
-        markAllowed(card, badge, overlay, statusText);
-      }, 150);
+        markBlocked(card, badge, overlay, statusText);
+      });
     });
-
-    iframe.addEventListener("error", () => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timeout);
-      markBlocked(card, badge, overlay, statusText);
-    });
-  });
-</script>
+  </script>
 </body>
+
 </html>
