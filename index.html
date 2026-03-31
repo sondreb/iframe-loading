@@ -301,6 +301,30 @@
     updateSummary();
   }
 
+  function detectIframeOutcome(iframe) {
+    try {
+      const frameWindow = iframe.contentWindow;
+      const frameDocument = iframe.contentDocument || frameWindow?.document;
+      const href = frameWindow?.location?.href || "";
+      const bodyText = (frameDocument?.body?.innerText || "").trim().toLowerCase();
+      const blockedText = /refused to connect|blocked by browser|x-frame-options|content-security-policy|frame-ancestors/.test(bodyText);
+
+      if (!href || href === "about:blank") {
+        return "blocked";
+      }
+
+      if (blockedText) {
+        return "blocked";
+      }
+
+      return "allowed";
+    } catch (_) {
+      // Cross-origin access throws once a page actually loads, which is the
+      // strongest signal we have that embedding was allowed.
+      return "allowed";
+    }
+  }
+
   const grid = document.getElementById("grid");
   updateSummary();
 
@@ -325,7 +349,7 @@
         </div>
         <iframe
           src="${url}"
-          sandbox="allow-scripts allow-forms allow-popups"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
           loading="lazy"
           title="${name}"
           referrerpolicy="no-referrer"
@@ -354,20 +378,20 @@
 
     iframe.addEventListener("load", () => {
       if (settled) return;
-      // A successful load fires here; but blocked iframes in some browsers
-      // still fire load with an empty contentDocument — check for that.
-      try {
-        // If we can access contentDocument it either loaded or is blank.
-        // We can't distinguish "loaded fine" from "blocked + blank page" reliably
-        // in all browsers, so we optimistically mark as Allowed on load event.
+      window.setTimeout(() => {
+        if (settled) return;
+
         settled = true;
         clearTimeout(timeout);
+        const outcome = detectIframeOutcome(iframe);
+
+        if (outcome === "blocked") {
+          markBlocked(card, badge, overlay, statusText);
+          return;
+        }
+
         markAllowed(card, badge, overlay, statusText);
-      } catch (_) {
-        settled = true;
-        clearTimeout(timeout);
-        markBlocked(card, badge, overlay, statusText);
-      }
+      }, 150);
     });
 
     iframe.addEventListener("error", () => {
